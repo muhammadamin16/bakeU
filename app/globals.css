@@ -2,3 +2,7 @@
 :root {
   font-family: var(--font-chewy), sans-serif;
 }
+
+body {
+  background-color: #f4ebe6;
+}
