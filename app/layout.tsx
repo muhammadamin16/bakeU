@@ -1,13 +1,7 @@
 import type { Metadata } from "next";
-import { Chewy } from "next/font/google";
+
 import "./globals.css";
 import Header from "@/components/layout/Header";
-
-const chewy = Chewy({
-  weight: "400",
-  subsets: ["latin"],
-  variable: "--font-chewy",
-});
 
 export const metadata: Metadata = {
   title: "BakeU",
@@ -21,7 +15,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${chewy.className} antialiased`}>
+      <body>
         <Header />
         {children}
       </body>

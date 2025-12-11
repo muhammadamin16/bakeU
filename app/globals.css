@@ -1,8 +1,11 @@
+@import url("https://fonts.googleapis.com/css2?family=Cause:wght@100..900&display=swap");
 @import "tailwindcss";
-:root {
-  font-family: var(--font-chewy), sans-serif;
-}
 
 body {
   background-color: #f4ebe6;
+}
+
+* {
+  font-family: "Cause", cursive;
+  font-weight: 600;
 }
