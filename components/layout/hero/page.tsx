@@ -33,7 +33,7 @@ export default function Hero() {
           <img
             width={600}
             height={300}
-            src="/hero_photo.jpg"
+            src="/images/hero_photo.jpg"
             className="h-full object-cover"
             alt="hero photo"
           />
