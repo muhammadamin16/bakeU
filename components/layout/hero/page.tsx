@@ -46,5 +46,6 @@ export default function Hero() {
         Crunchy
       </span>
     </div>
+
   );
 }
