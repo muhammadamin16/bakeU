@@ -2,7 +2,7 @@ import { ChevronRight } from "lucide-react";
 
 export default function Hero() {
   return (
-    <div className="bg-white rounded-4xl p-10 shadow-md relative">
+    <div className="bg-white rounded-4xl p-10 shadow-md relative mt-6">
       <h1 className="uppercase text-[64px] md:text-[90px] leading-[0.8] font-black origin-left transform-[scaleX(1.1)] tracking-[0.05em]">
         bake the cookies
       </h1>
