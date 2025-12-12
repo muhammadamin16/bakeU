@@ -26,7 +26,7 @@ export default function Header() {
             Продавцы
           </Link>
         </li>
-        <li className=" w-md bg-white border rounded-xl overflow-hidden flex">
+        <li className="w-md bg-white border rounded-3xl overflow-hidden flex">
           <input
             type="text"
             placeholder="Искать товары и категории"
