@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 
 const images = [
@@ -14,45 +14,95 @@ const images = [
 export default function Slider() {
   const [index, setIndex] = useState(0);
   const visible = 3;
-  const maxIndex = images.length - visible;
+  const maxIndex = Math.max(0, images.length - visible);
 
-  // TOUCH swipe support
-  const startX = useRef(0);
-  const endX = useRef(0);
+  const next = useCallback(() => {
+    setIndex((i) => (i < maxIndex ? i + 1 : 0));
+  }, [maxIndex]);
 
-  const next = () => setIndex((i) => (i < maxIndex ? i + 1 : 0));
-  const prev = () => setIndex((i) => (i > 0 ? i - 1 : maxIndex));
+  const prev = useCallback(() => {
+    setIndex((i) => (i > 0 ? i - 1 : maxIndex));
+  }, [maxIndex]);
 
-  // авто переход 3 секунды
+  // ----- autoplay (не тухнет, не замыкается) -----
+  const isPausedRef = useRef(false);
+
   useEffect(() => {
-    const timer = setInterval(() => {
-      next();
+    const id = window.setInterval(() => {
+      if (!isPausedRef.current) next();
     }, 3000);
+    return () => window.clearInterval(id);
+  }, [next]);
 
-    return () => clearInterval(timer);
-  }, []);
+  // ----- pointer swipe -----
+  const trackRef = useRef<HTMLDivElement | null>(null);
+  const pointerIdRef = useRef<number | null>(null);
 
-  // свайп
-  const handleTouchStart = (e: React.TouchEvent) => {
-    startX.current = e.touches[0].clientX;
+  const startXRef = useRef(0);
+  const lastXRef = useRef(0);
+  const draggingRef = useRef(false);
+  const movedRef = useRef(false);
+
+  const SWIPE_PX = 50;
+
+  const startYRef = useRef(0);
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+
+    pointerIdRef.current = e.pointerId; // ✅ ВАЖНО
+    startXRef.current = e.clientX;
+    startYRef.current = e.clientY;
+    lastXRef.current = e.clientX; // ✅ ВАЖНО
+    draggingRef.current = true;
+    movedRef.current = false;
+
+    isPausedRef.current = true;
+
+    trackRef.current?.setPointerCapture?.(e.pointerId); // ✅ чтобы up не терялся
   };
 
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    endX.current = e.changedTouches[0].clientX;
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!draggingRef.current) return;
+    if (pointerIdRef.current !== e.pointerId) return;
 
-    const diff = startX.current - endX.current;
+    const dx = e.clientX - startXRef.current;
+    const dy = e.clientY - startYRef.current;
 
-    if (diff > 50) next();     // swipe left
-    if (diff < -50) prev();    // swipe right
+    // если вертикаль доминирует — это скролл, отваливаемся
+    if (Math.abs(dy) > Math.abs(dx)) {
+      draggingRef.current = false;
+      trackRef.current?.releasePointerCapture?.(e.pointerId);
+      pointerIdRef.current = null;
+      // автоплей возвращаем чуть позже, чтобы не дергалось
+      window.setTimeout(() => (isPausedRef.current = false), 600);
+      return;
+    }
+
+    lastXRef.current = e.clientX; // ✅ ВАЖНО
+    if (Math.abs(dx) > 6) movedRef.current = true;
+  };
+
+  const finishSwipe = (e: React.PointerEvent) => {
+    if (pointerIdRef.current !== e.pointerId) return;
+
+    trackRef.current?.releasePointerCapture?.(e.pointerId);
+    pointerIdRef.current = null;
+
+    const dx = lastXRef.current - startXRef.current;
+
+    draggingRef.current = false;
+
+    if (dx <= -SWIPE_PX) next();
+    else if (dx >= SWIPE_PX) prev();
+
+    window.setTimeout(() => {
+      isPausedRef.current = false;
+    }, 600);
   };
 
   return (
-    <div
-      className="relative w-full mx-auto"
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-    >
-      {/* ЛЕВАЯ стрелка */}
+    <div className="relative w-full mx-auto select-none">
       <button
         onClick={prev}
         className="absolute -left-3 top-1/2 -translate-y-1/2 z-10 bg-black/50 text-white px-3 py-2 rounded-full"
@@ -60,7 +110,6 @@ export default function Slider() {
         ←
       </button>
 
-      {/* ПРАВАЯ стрелка */}
       <button
         onClick={next}
         className="absolute -right-3 top-1/2 -translate-y-1/2 z-10 bg-black/50 text-white px-3 py-2 rounded-full"
@@ -68,22 +117,48 @@ export default function Slider() {
         →
       </button>
 
-      {/* СЛАЙДЕР */}
       <div className="overflow-hidden">
         <div
-          className="flex transition-transform duration-500"
-          style={{
-            transform: `translateX(-${(index * 100) / visible}%)`,
+          ref={trackRef}
+          className="flex transition-transform duration-500 touch-pan-y"
+          style={{ transform: `translateX(-${(index * 100) / visible}%)` }}
+          onMouseEnter={() => {
+            isPausedRef.current = true;
           }}
+          onMouseLeave={() => {
+            if (!draggingRef.current) isPausedRef.current = false;
+          }}
+          onWheel={() => {
+            isPausedRef.current = true;
+            window.setTimeout(() => {
+              isPausedRef.current = false;
+            }, 4000);
+          }}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={finishSwipe}
+          onPointerCancel={finishSwipe}
+          // чтобы на iOS не пыталось выделять/перетаскивать картинки
+          onDragStart={(e) => e.preventDefault()}
         >
           {images.map((src, i) => (
             <div
               key={i}
               className="w-1/3 p-2 shrink-0 cursor-pointer"
-              onClick={next} // ← КЛИК ПО КАРТИНКЕ = следующий слайд
+              onClick={() => {
+                // если был свайп, не считаем это кликом
+                if (movedRef.current) return;
+                next();
+              }}
             >
               <div className="relative aspect-3/2 rounded-xl overflow-hidden">
-                <Image src={src} alt="" fill className="object-cover" />
+                <Image
+                  src={src}
+                  alt=""
+                  fill
+                  className="object-cover pointer-events-none"
+                  // pointer-events-none чтобы pointer события шли контейнеру
+                />
               </div>
             </div>
           ))}
