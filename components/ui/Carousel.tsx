@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import Image from "next/image";
 
 const images = [
@@ -26,13 +26,6 @@ export default function Slider() {
 
   // ----- autoplay (не тухнет, не замыкается) -----
   const isPausedRef = useRef(false);
-
-  useEffect(() => {
-    const id = window.setInterval(() => {
-      if (!isPausedRef.current) next();
-    }, 3000);
-    return () => window.clearInterval(id);
-  }, [next]);
 
   // ----- pointer swipe -----
   const trackRef = useRef<HTMLDivElement | null>(null);
