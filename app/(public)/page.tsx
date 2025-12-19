@@ -7,7 +7,9 @@ export default function Home() {
     <div className="container mx-auto xl:px-4">
       <Hero />
       <TopProducts />
-       <main className="py-6"><Slider /></main>
+      <main className="py-6">
+        <Slider />
+      </main>
     </div>
   );
 }
